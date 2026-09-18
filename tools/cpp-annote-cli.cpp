@@ -154,7 +154,7 @@ static void print_timing(const char* tag, const std::string& path,
 static void run_diarize(cppannote::CppAnnote& engine,
                         const std::vector<DiarJob>& jobs,
                         double cluster_cadence, double analyze_cadence,
-                        bool continue_on_error) {
+                        bool continue_on_error, bool exclusive) {
   int n_fail = 0;
   double total_audio_sec = 0.;
   double total_wall_sec = 0.;
@@ -176,7 +176,7 @@ static void run_diarize(cppannote::CppAnnote& engine,
         }
       }
 
-      int32_t stream_id = engine.create_stream(cluster_cadence, analyze_cadence);
+      int32_t stream_id = engine.create_stream(cluster_cadence, analyze_cadence, exclusive);
       engine.start_stream(stream_id);
 
       constexpr double kSimChunkSec = 1.0;
@@ -268,6 +268,7 @@ int main(int argc, char** argv) {
         << "  --segmentation-onnx PATH   path to segmentation .onnx file\n"
         << "  --embedding-onnx PATH      path to embedding .onnx file\n\n"
         << "Other:\n"
+        << "  --exclusive                    select one speaker per speech frame\n"
         << "  --continue-on-error            print error and continue; exit 1 "
            "if any failed\n";
     return 2;
@@ -323,7 +324,7 @@ int main(int argc, char** argv) {
             : cppannote::CppAnnote(seg_onnx, emb_onnx);
 
     run_diarize(engine, jobs, cluster_cadence, analyze_cadence,
-                continue_on_error);
+                continue_on_error, has_flag(argc, argv, "--exclusive"));
   } catch (const std::exception& e) {
     std::cerr << "ERROR: " << e.what() << "\n";
     return 1;

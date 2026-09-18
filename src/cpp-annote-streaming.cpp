@@ -295,7 +295,7 @@ void StreamingDiarizationSession::maybe_refresh(bool force) {
 
   std::vector<DiarizationTurn> raw =
       engine_.cluster_and_decode(seg_out, emb_all, C_full, prof,
-                                 effective_step_sec_);
+                                 effective_step_sec_, cfg_.exclusive);
 
   prof.segmentation_ort_sec = 0.;
   prof.total_sec =

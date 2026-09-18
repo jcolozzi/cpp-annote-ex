@@ -53,6 +53,11 @@ CPPANNOTE_API int cpp_annote_diarize(
     int sr,
     char** out_json);
 
+/** Like cpp_annote_diarize, but selects at most one speaker per speech frame. */
+CPPANNOTE_API int cpp_annote_diarize_exclusive(
+    struct cpp_annote_context* ctx, const float* audio,
+    int n_samples, int sr, char** out_json);
+
 /**
  * VAD-only: return segments tanpa speaker ID.
  * output: JSON array [{"start": ..., "end": ...}, ...]

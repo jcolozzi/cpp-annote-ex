@@ -36,18 +36,18 @@ void cpp_annote_free(cpp_annote_context* ctx) {
     delete ctx;
 }
 
-int cpp_annote_diarize(
+static int diarize_impl(
     cpp_annote_context* ctx,
     const float* audio,
     int n_samples,
     int sr,
-    char** out_json)
+    char** out_json, bool exclusive)
 {
     if (!ctx || !ctx->engine || !audio || !out_json) return -1;
     if (n_samples <= 0) return -1;
 
     try {
-        auto results = ctx->engine->diarize(audio, (uint64_t)n_samples, sr);
+        auto results = ctx->engine->diarize(audio, (uint64_t)n_samples, sr, exclusive);
 
         // Serialize to JSON
         std::ostringstream ss;
@@ -105,6 +105,16 @@ int cpp_annote_vad(
     } catch (...) {
         return -1;
     }
+}
+
+int cpp_annote_diarize(cpp_annote_context* ctx, const float* audio,
+                      int n_samples, int sr, char** out_json) {
+    return diarize_impl(ctx, audio, n_samples, sr, out_json, false);
+}
+
+int cpp_annote_diarize_exclusive(cpp_annote_context* ctx, const float* audio,
+                                int n_samples, int sr, char** out_json) {
+    return diarize_impl(ctx, audio, n_samples, sr, out_json, true);
 }
 
 void cpp_annote_free_string(char* str) {

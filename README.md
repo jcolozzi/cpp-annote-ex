@@ -55,6 +55,37 @@ Streaming mode allows you to supply audio in chunks over time, as it arrives fro
 
 When you need to know the latest results of the segmentation and embedding, you can call `diarize_stream()`, which will return a list of turns, each of which has a start and end time, along with an estimated speaker ID. These IDs are numerical indices, starting at 0, with a new one added any time a new speaker is heard. The segmentation and speaker identification values may change over time as new audio is added, so you should not rely on segments being constant after they've been added to the list. You'll need to decide how often you want to call `diarize_stream()`, since it does involve some compute, so you'll need to figure out the right tradeoff between result frequency and overall compute load for your application.
 
+## Exclusive diarization
+
+Overlap-aware output is the default. Use `--exclusive` to select at most one
+speaker per speech frame, following community-1's exclusive reconstruction:
+
+```bash
+build/cpp-annote-cli --wav audio/conversation.wav --exclusive \
+  --segmentation-onnx artifacts/community1-segmentation.onnx \
+  --embedding-onnx artifacts/community1-embedding.onnx
+```
+
+If building this checkout without embedded model arrays, configure CMake with
+`-DCMAKE_CXX_FLAGS=-DCPPANNOTE_NO_EMBEDDED` and supply the model paths above.
+
+In C++, select it per batch call or per stream:
+
+```cpp
+auto result = engine.diarize(samples.data(), samples.size(), 16000, true);
+auto stream = engine.create_stream(2.0, 0.0, true);
+```
+
+The C API provides `cpp_annote_diarize_exclusive` with the same arguments and
+JSON format as `cpp_annote_diarize`. Existing calls keep overlap-aware output.
+
+Exclusive mode caps the instantaneous speaker count at one before reconstructing
+turns from the clustered speaker scores. Silence remains silent, and different
+speakers can still appear throughout the recording. It does not separate mixed
+audio or recover both simultaneous utterances. Streaming results can still be
+revised as more audio arrives. This selects one output mode per call/session;
+it does not return both modes together as Python's community-1 pipeline does.
+
 ## License
 
 This framework is released under the MIT License (see LICENSE).

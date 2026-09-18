@@ -48,15 +48,17 @@ class CppAnnote {
   CppAnnote &operator=(CppAnnote &&) noexcept;
 
   /// Diarize an entire buffer of mono PCM audio in one shot.
+  /// exclusive selects at most one speaker per speech frame (silence stays silent).
   DiarizationResults diarize(const float *audio_data, uint64_t audio_length,
-                             int32_t sample_rate = 16000);
+                             int32_t sample_rate = 16000, bool exclusive = false);
 
   /// Allocate a new streaming diarization session and return its handle.
+  /// exclusive selects at most one speaker per speech frame for this stream.
   /// ``cluster_cadence`` controls how often VBx re-clustering runs (seconds).
   /// ``analyze_cadence`` controls the step between segmentation+embedding model
   /// runs (seconds, must be >0 and <=10; 0 means use the model default).
   int32_t create_stream(double cluster_cadence = 2.0,
-                        double analyze_cadence = 0.0);
+                        double analyze_cadence = 0.0, bool exclusive = false);
 
   /// Release a stream and all associated resources.
   void free_stream(int32_t stream_id);

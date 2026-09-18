@@ -871,7 +871,7 @@ std::vector<float> CppAnnoteEngine::run_embedding_ort_single(
 
 std::vector<DiarizationTurn> CppAnnoteEngine::cluster_and_decode(
     const std::vector<float> &seg_out, const std::vector<float> &emb, int C,
-    DiarizationProfile &profile, double chunk_step_sec_override) {
+    DiarizationProfile &profile, double chunk_step_sec_override, bool exclusive) {
   using Clock = std::chrono::steady_clock;
   const int F = seg_F_;
   const int Kcls = seg_K_;
@@ -947,10 +947,12 @@ std::vector<DiarizationTurn> CppAnnoteEngine::cluster_and_decode(
     throw std::runtime_error("hard_clusters: no cluster id >= 0");
   }
   const int num_detected_speakers = max_cluster_id + 1;
+  // Community-1 exclusive reconstruction caps the instantaneous count,
+  // retaining silence and selecting the highest-scoring clustered speaker.
   for (size_t t = 0; t < count_i8.size(); ++t) {
     const int v = static_cast<int>(count_i8[t]);
     count_i8[t] = static_cast<std::int8_t>(
-        std::max(0, std::min(v, num_detected_speakers)));
+        std::max(0, std::min(v, exclusive ? 1 : num_detected_speakers)));
   }
 
   const double onset = 0.5;
@@ -1100,11 +1102,12 @@ CppAnnote::CppAnnote(CppAnnote &&) noexcept = default;
 CppAnnote &CppAnnote::operator=(CppAnnote &&) noexcept = default;
 
 int32_t CppAnnote::create_stream(double cluster_cadence,
-                                 double analyze_cadence) {
+                                 double analyze_cadence, bool exclusive) {
   const int32_t id = impl_->next_stream_id++;
   StreamingDiarizationConfig cfg;
   cfg.cluster_cadence = cluster_cadence;
   cfg.analyze_cadence = analyze_cadence;
+  cfg.exclusive = exclusive;
   impl_->stream_configs[id] = cfg;
   impl_->streams[id] =
       std::make_unique<StreamingDiarizationSession>(impl_->engine, cfg);
@@ -1135,10 +1138,11 @@ void CppAnnote::add_audio_to_stream(int32_t stream_id, const float *audio_data,
 
 DiarizationResults CppAnnote::diarize(const float *audio_data,
                                       uint64_t audio_length,
-                                      int32_t sample_rate) {
+                                      int32_t sample_rate, bool exclusive) {
   constexpr double kNeverRefresh = 1e18;
   StreamingDiarizationConfig cfg;
   cfg.cluster_cadence = kNeverRefresh;
+  cfg.exclusive = exclusive;
   StreamingDiarizationSession sess(impl_->engine, cfg);
   sess.start_session();
   sess.add_audio_chunk(audio_data, static_cast<std::size_t>(audio_length),

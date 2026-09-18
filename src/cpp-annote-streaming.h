@@ -18,6 +18,8 @@
 namespace cppannote {
 
 struct StreamingDiarizationConfig {
+  bool exclusive = false;
+
   /// Seconds between segmentation+embedding model runs (sliding-window step).
   /// Must be >0 and <=10.  Defaults to 0 which means "use the model's
   /// built-in ``chunk_step_sec``" (typically 1.0 s for community-1).

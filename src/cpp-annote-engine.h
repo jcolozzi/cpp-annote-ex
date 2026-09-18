@@ -89,7 +89,8 @@ private:
 
   std::vector<DiarizationTurn> cluster_and_decode(
       const std::vector<float>& seg_out, const std::vector<float>& emb, int C,
-      DiarizationProfile& profile, double chunk_step_sec_override = 0.0);
+      DiarizationProfile& profile, double chunk_step_sec_override = 0.0,
+      bool exclusive = false);
 
   int segmentation_model_sample_rate() const { return cfg_.sr_model; }
   int segmentation_num_channels() const { return cfg_.num_channels; }
