@@ -55,7 +55,8 @@ void run_embedding_ort(Ort::Session& sess, Ort::MemoryInfo& mem,
   Ort::Value wt = Ort::Value::CreateTensor<float>(
       mem, const_cast<float*>(weights), static_cast<size_t>(weight_num_frames),
       shw.data(), shw.size());
-  Ort::Value inputs[2];
+  // Ort::Value is not default-constructible before ORT 1.27; null-init and move in below.
+  Ort::Value inputs[2]{Ort::Value{nullptr}, Ort::Value{nullptr}};
   const char* in_names[2];
   if (fbank_first) {
     inputs[0] = std::move(fb);
